@@ -1,29 +1,34 @@
-from ._message import Message
+from typing import Callable, Generic, TypeVar
+
+from pydantic import BaseModel
 
 
 __all__ = (
     "Hub",
-    "HubMessageHandler"
+    "HubSubscriber"
 )
 
 
-class HubMessageHandler:
-    def on(self, message: Message) -> None:
-        raise NotImplementedError
+M = TypeVar("M", bound=BaseModel)
 
 
-class Hub:
-    _handlers: list[HubMessageHandler]
+HubSubscriber = Callable[[M], None]
+
+
+class Hub(Generic[M]):
+    _subscribers: set[HubSubscriber]
 
     def __init__(self) -> None:
-        self._handlers = []
+        self._subscribers = []
 
-    def dispatch(self, message: Message) -> None:
-        for handler in self._handlers:
-            handler.on(message)
+    def dispatch(self, message: M) -> None:
+        for subscriber in self._subscribers:
+            subscriber(message)
 
-    def register(self, handler: HubMessageHandler) -> None:
-        self._handlers.append(handler)
+    def subscribe(self, subscriber: HubSubscriber) -> Callable[[], None]:
+        self._subscribers.add(subscriber)
 
-    def unregister(self, handler: HubMessageHandler) -> None:
-        self._handlers.remove(handler)
+        def unsubscribe() -> None:
+            self._subscribers.remove(subscriber)
+
+        return unsubscribe
