@@ -19,7 +19,7 @@ class Hub(Generic[M]):
     _subscribers: set[HubSubscriber]
 
     def __init__(self) -> None:
-        self._subscribers = []
+        self._subscribers = set()
 
     def dispatch(self, message: M) -> None:
         for subscriber in self._subscribers:
